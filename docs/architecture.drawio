@@ -1,0 +1,82 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="_ldaa6ICSsIIirUBKa9Q" name="Page-1">
+    <mxGraphModel dx="1414" dy="777" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" parent="1" style="text;html=1;fontSize=16;fontStyle=1;align=center;" value="csvapp Architecture" vertex="1">
+          <mxGeometry height="30" width="200" x="300" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Developer" vertex="1">
+          <mxGeometry height="40" width="100" x="60" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="GitHub" vertex="1">
+          <mxGeometry height="40" width="100" x="240" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="5" edge="1" parent="1" source="3" style="edgeStyle=orthogonalEdgeStyle;" target="4" value="git push">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="GitHub Actions&#xa;(build + deploy)" vertex="1">
+          <mxGeometry height="40" width="120" x="420" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="7" edge="1" parent="1" source="4" style="edgeStyle=orthogonalEdgeStyle;" target="6" value="trigger">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="DockerHub&#xa;(docker image)" vertex="1">
+          <mxGeometry height="40" width="120" x="420" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="9" edge="1" parent="1" source="6" style="edgeStyle=orthogonalEdgeStyle;" target="8" value="push image">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;fontStyle=1;verticalAlign=top;" value="Kubernetes (Minikube)" vertex="1">
+          <mxGeometry height="220" width="360" x="200" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;verticalAlign=top;" value="Pod" vertex="1">
+          <mxGeometry height="140" width="300" x="220" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="12" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Nginx&#xa;(sidecar)" vertex="1">
+          <mxGeometry height="60" width="100" x="240" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Flask App&#xa;(python)" vertex="1">
+          <mxGeometry height="60" width="100" x="400" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="14" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" value="shared folder&#xa;(emptyDir, not NFS)" vertex="1">
+          <mxGeometry height="30" width="140" x="300" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Service (NodePort)" vertex="1">
+          <mxGeometry height="40" width="160" x="280" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="16" edge="1" parent="1" source="15" style="edgeStyle=orthogonalEdgeStyle;" target="11" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="17" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="User (Browser)" vertex="1">
+          <mxGeometry height="40" width="120" x="60" y="587" as="geometry" />
+        </mxCell>
+        <mxCell id="18" edge="1" parent="1" source="17" style="edgeStyle=orthogonalEdgeStyle;" target="15" value="HTTP">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="19" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="AWS S3&#xa;(stores CSV files)&#xa;Glacier after 30 days" vertex="1">
+          <mxGeometry height="60" width="140" x="640" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="20" edge="1" parent="1" source="13" style="edgeStyle=orthogonalEdgeStyle;" target="19" value="upload file">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="21" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Terraform&#xa;(creates S3 bucket)" vertex="1">
+          <mxGeometry height="40" width="140" x="640" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="22" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Ansible&#xa;(manages app config)" vertex="1">
+          <mxGeometry height="40" width="140" x="640" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="23" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="kops config&#xa;(spot + ondemand nodes&#xa;cluster autoscaler)" vertex="1">
+          <mxGeometry height="60" width="140" x="640" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="24" edge="1" parent="1" source="6" style="edgeStyle=orthogonalEdgeStyle;" target="10" value="helm deploy">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="25" edge="1" parent="1" source="8" style="edgeStyle=orthogonalEdgeStyle;" target="11" value="pull image">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
