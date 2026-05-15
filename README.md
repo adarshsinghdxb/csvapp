@@ -4,7 +4,7 @@ Simple web app to upload and process CSV files. Built with Python Flask.
 
 ## How to run locally
 
-```bash
+```
 cd app
 pip install -r requirements.txt
 python app.py
@@ -14,7 +14,7 @@ Open http://localhost:5000 and upload soh.csv
 
 ## Run with Docker
 
-```bash
+```
 cd app
 docker build -t csvapp .
 docker run -p 5000:5000 csvapp
@@ -22,15 +22,21 @@ docker run -p 5000:5000 csvapp
 
 ## Deploy on Kubernetes
 
-```bash
-minikube start
+```
+minikube start --driver=docker
 helm install csvapp ./helm/csvapp
 minikube service csvapp-service --url
 ```
 
+If you see nginx page instead of app run this:
+
+```
+helm upgrade csvapp ./helm/csvapp --set service.port=5000 --set nginx.port=5000
+```
+
 ## S3 setup
 
-```bash
+```
 cd terraform
 terraform init
 terraform apply
