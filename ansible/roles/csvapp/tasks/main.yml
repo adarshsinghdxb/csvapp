@@ -1,0 +1,80 @@
+---
+# Role: csvapp
+# Tasks: Deploy Helm chart and manage K8s configs
+
+- name: Create app namespace
+  kubernetes.core.k8s:
+    name: "{{ app_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+  tags: [setup]
+
+- name: Create app secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ app_name }}-secret"
+        namespace: "{{ app_namespace }}"
+      type: Opaque
+      stringData:
+        SECRET_KEY: "{{ secret_key }}"
+        AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+  tags: [config, secrets]
+
+- name: Create app configmap
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: "{{ app_name }}-config"
+        namespace: "{{ app_namespace }}"
+      data:
+        S3_BUCKET: "{{ s3_bucket }}"
+        S3_REGION: "{{ s3_region }}"
+        FLASK_ENV: "{{ flask_env }}"
+  tags: [config]
+
+- name: Deploy Helm chart
+  kubernetes.core.helm:
+    name: "{{ helm_release_name }}"
+    chart_ref: "{{ helm_chart_path }}"
+    release_namespace: "{{ helm_namespace }}"
+    values:
+      image:
+        repository: "{{ docker_image }}"
+        tag: "{{ docker_tag }}"
+      app:
+        secretKey: "{{ secret_key }}"
+  tags: [helm, deploy]
+
+- name: Wait for deployment to be ready
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "{{ app_name }}-deployment"
+    namespace: "{{ app_namespace }}"
+    wait: true
+    wait_condition:
+      type: Available
+      status: "True"
+    wait_timeout: 120
+  tags: [deploy, verify]
+
+- name: Get service URL
+  kubernetes.core.k8s_info:
+    kind: Service
+    name: "{{ app_name }}-service"
+    namespace: "{{ app_namespace }}"
+  register: service_info
+  tags: [verify]
+
+- name: Print service info
+  debug:
+    msg: "App available at NodePort: {{ service_info.resources[0].spec.ports[0].nodePort }}"
+  tags: [verify]

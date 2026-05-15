@@ -1,0 +1,23 @@
+---
+# csvapp configuration variables
+# Override these per environment
+
+app_name: csvapp
+app_namespace: default
+docker_image: adarshsinghdxb/csvapp
+docker_tag: latest
+
+# S3 configuration (production)
+s3_bucket: csvapp-processed-files
+s3_region: us-east-1
+aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+
+# App config
+secret_key: "{{ lookup('env', 'APP_SECRET_KEY') | default('csvapp-secret-key') }}"
+flask_env: production
+
+# Helm config
+helm_chart_path: "../../helm/csvapp"
+helm_release_name: csvapp
+helm_namespace: default

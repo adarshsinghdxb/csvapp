@@ -1,0 +1,16 @@
+---
+# Ansible Playbook — csvapp configuration management
+# Manages application configs and deploys Helm chart
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbook.yml
+#   ansible-playbook -i inventory/hosts.yml playbook.yml --tags helm
+#   ansible-playbook -i inventory/hosts.yml playbook.yml --tags config
+
+- name: Deploy csvapp
+  hosts: k8s_master
+  become: false
+  vars_files:
+    - vars/main.yml
+  roles:
+    - csvapp
