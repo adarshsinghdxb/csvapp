@@ -77,9 +77,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "csvapp" {
       storage_class = "GLACIER_IR"
     }
 
-    # Move to Glacier Deep Archive after 90 days (cheapest)
+    # Move to Glacier Deep Archive after 120 days (cheapest)
     transition {
-      days          = 90
+      days          = 120
       storage_class = "DEEP_ARCHIVE"
     }
 
