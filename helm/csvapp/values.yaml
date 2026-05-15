@@ -1,0 +1,44 @@
+replicaCount: 2
+
+image:
+  repository: adarshsinghdxb/csvapp
+  tag: latest
+  pullPolicy: Always
+
+nginx:
+  image: nginx:alpine
+  port: 80
+
+app:
+  port: 5000
+  secretKey: "csvapp-secret-key"
+
+service:
+  type: NodePort
+  port: 80
+  nodePort: 30080
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+resources:
+  app:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  nginx:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+storage:
+  sharedVolumeSizeLimit: 500Mi

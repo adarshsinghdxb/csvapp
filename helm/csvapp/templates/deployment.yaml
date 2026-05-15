@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-deployment
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      # Shared emptyDir volume for static files (css, js, etc)
+      # NOT NFS as required — emptyDir is ephemeral, lives with the pod
+      volumes:
+        - name: shared-static
+          emptyDir:
+            sizeLimit: {{ .Values.storage.sharedVolumeSizeLimit }}
+
+      # Init container copies static files into shared volume
+      initContainers:
+        - name: static-copy
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          command: ["sh", "-c", "cp -r /app/static/* /shared/ 2>/dev/null || true"]
+          volumeMounts:
+            - name: shared-static
+              mountPath: /shared
+
+      containers:
+        # Main Flask application container
+        - name: app
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.app.port }}
+          env:
+            - name: SECRET_KEY
+              value: {{ .Values.app.secretKey }}
+          volumeMounts:
+            - name: shared-static
+              mountPath: /app/static
+          resources:
+            requests:
+              cpu: {{ .Values.resources.app.requests.cpu }}
+              memory: {{ .Values.resources.app.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.app.limits.cpu }}
+              memory: {{ .Values.resources.app.limits.memory }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.app.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.app.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+        # Nginx sidecar — serves static files, proxies dynamic to Flask
+        - name: nginx
+          image: {{ .Values.nginx.image }}
+          ports:
+            - containerPort: {{ .Values.nginx.port }}
+          volumeMounts:
+            - name: shared-static
+              mountPath: /usr/share/nginx/html/static
+          resources:
+            requests:
+              cpu: {{ .Values.resources.nginx.requests.cpu }}
+              memory: {{ .Values.resources.nginx.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.nginx.limits.cpu }}
+              memory: {{ .Values.resources.nginx.limits.memory }}
