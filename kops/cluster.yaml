@@ -1,0 +1,174 @@
+# kops Cluster Configuration
+# Multiple Instance Groups with mixed lifecycle (spot + on-demand)
+# Cluster Autoscaler enabled for all instance groups
+#
+# To apply (when you have a real cluster):
+#   kops create -f cluster.yaml
+#   kops update cluster csvapp.k8s.local --yes
+#   kops validate cluster --wait 10m
+
+---
+apiVersion: kops.k8s.io/v1alpha2
+kind: Cluster
+metadata:
+  name: csvapp.k8s.local
+spec:
+  kubernetesVersion: "1.29.0"
+  cloudProvider: aws
+  configBase: s3://csvapp-kops-state/csvapp.k8s.local
+
+  # Networking
+  networkCIDR: 10.0.0.0/16
+  networking:
+    calico: {}
+
+  subnets:
+    - name: us-east-1a
+      type: Private
+      zone: us-east-1a
+      cidr: 10.0.1.0/24
+    - name: us-east-1b
+      type: Private
+      zone: us-east-1b
+      cidr: 10.0.2.0/24
+    - name: utility-us-east-1a
+      type: Utility
+      zone: us-east-1a
+      cidr: 10.0.100.0/24
+    - name: utility-us-east-1b
+      type: Utility
+      zone: us-east-1b
+      cidr: 10.0.101.0/24
+
+  # Cluster Autoscaler
+  clusterAutoscaler:
+    enabled: true
+    skipNodesWithLocalStorage: false
+    skipNodesWithSystemPods: false
+    balanceSimilarNodeGroups: true
+    newPodScaleUpDelay: 0s
+    scaleDownUnneededTime: 10m
+    scaleDownDelayAfterAdd: 10m
+
+  api:
+    loadBalancer:
+      type: Public
+
+  etcdClusters:
+    - name: main
+      etcdMembers:
+        - name: a
+          instanceGroup: master-us-east-1a
+        - name: b
+          instanceGroup: master-us-east-1b
+    - name: events
+      etcdMembers:
+        - name: a
+          instanceGroup: master-us-east-1a
+        - name: b
+          instanceGroup: master-us-east-1b
+
+---
+# Instance Group 1: Masters (on-demand, HA across 2 AZs)
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  name: master-us-east-1a
+  labels:
+    kops.k8s.io/cluster: csvapp.k8s.local
+spec:
+  role: Master
+  machineType: t3.medium
+  minSize: 1
+  maxSize: 1
+  subnets:
+    - us-east-1a
+  cloudLabels:
+    k8s.io/cluster-autoscaler/enabled: "true"
+    k8s.io/cluster-autoscaler/csvapp.k8s.local: "owned"
+
+---
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  name: master-us-east-1b
+  labels:
+    kops.k8s.io/cluster: csvapp.k8s.local
+spec:
+  role: Master
+  machineType: t3.medium
+  minSize: 1
+  maxSize: 1
+  subnets:
+    - us-east-1b
+
+---
+# Instance Group 2: On-demand workers (baseline, always running)
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  name: nodes-ondemand
+  labels:
+    kops.k8s.io/cluster: csvapp.k8s.local
+spec:
+  role: Node
+  # Mixed instance policy for cost optimization
+  machineType: t3.medium
+  minSize: 2
+  maxSize: 5
+  subnets:
+    - us-east-1a
+    - us-east-1b
+  # On-demand lifecycle
+  instanceLifecycle: OnDemand
+  mixedInstancesPolicy:
+    instances:
+      - t3.medium
+      - t3.large
+      - t3a.medium
+    onDemandBase: 2
+    onDemandAboveBase: 100
+    spotAllocationStrategy: lowest-price
+  cloudLabels:
+    k8s.io/cluster-autoscaler/enabled: "true"
+    k8s.io/cluster-autoscaler/csvapp.k8s.local: "owned"
+    node-type: "on-demand"
+  nodeLabels:
+    node-type: on-demand
+
+---
+# Instance Group 3: Spot workers (cost-optimized, scalable)
+apiVersion: kops.k8s.io/v1alpha2
+kind: InstanceGroup
+metadata:
+  name: nodes-spot
+  labels:
+    kops.k8s.io/cluster: csvapp.k8s.local
+spec:
+  role: Node
+  machineType: t3.medium
+  minSize: 0
+  maxSize: 10
+  subnets:
+    - us-east-1a
+    - us-east-1b
+  # Spot lifecycle — cheaper, can be interrupted
+  instanceLifecycle: Spot
+  mixedInstancesPolicy:
+    instances:
+      - t3.medium
+      - t3.large
+      - t3a.medium
+      - t2.medium
+    onDemandBase: 0
+    onDemandAboveBase: 0
+    spotAllocationStrategy: diversified
+  cloudLabels:
+    k8s.io/cluster-autoscaler/enabled: "true"
+    k8s.io/cluster-autoscaler/csvapp.k8s.local: "owned"
+    node-type: "spot"
+  nodeLabels:
+    node-type: spot
+  # Toleration so spot nodes can be used
+  taints:
+    - node-type=spot:NoSchedule
