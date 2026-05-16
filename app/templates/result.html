@@ -136,6 +136,7 @@
 
 <div class="success-banner">
   ✓ &nbsp; {{ filename }} processed and uploaded to storage
+{% if s3_uploaded %} and uploaded to S3{% else %} and saved locally{% endif %}
 </div>
 
 <div class="meta-row">

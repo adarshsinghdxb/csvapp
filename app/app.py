@@ -1,16 +1,21 @@
 import os
 import csv
 import json
+import boto3
 from datetime import datetime
+from botocore.exceptions import NoCredentialsError
 from flask import Flask, render_template, request, redirect, url_for, flash
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "csvapp-secret-key")
 
-# Local storage directory (simulates S3 in local mode)
+# S3 config - reads from environment variables
+S3_BUCKET = os.environ.get("S3_BUCKET", "csvapp-processed-files")
+S3_REGION = os.environ.get("S3_REGION", "us-east-1")
+
+# Local fallback folder
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "processed")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
 METADATA_FILE = os.path.join(UPLOAD_FOLDER, "metadata.json")
 
 
@@ -41,6 +46,20 @@ def parse_csv(file):
     return rows
 
 
+def upload_to_s3(local_path, s3_key):
+    try:
+        s3 = boto3.client("s3", region_name=S3_REGION)
+        s3.upload_file(local_path, S3_BUCKET, f"processed/{s3_key}")
+        print(f"Uploaded to S3: {s3_key}")
+        return True
+    except NoCredentialsError:
+        print("No AWS credentials found, skipping S3 upload")
+        return False
+    except Exception as e:
+        print(f"S3 upload failed: {e}")
+        return False
+
+
 @app.route("/", methods=["GET"])
 def index():
     processed_files = load_metadata()
@@ -65,7 +84,7 @@ def upload():
 
     rows = parse_csv(file)
 
-    # Save file locally (simulates S3 upload)
+    # Save locally first
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     saved_filename = f"{timestamp}_{file.filename}"
     saved_path = os.path.join(UPLOAD_FOLDER, saved_filename)
@@ -76,17 +95,21 @@ def upload():
         for row in rows:
             writer.writerow([row["product_id"], row["product_name"], row["price"]])
 
+    # Upload to S3
+    s3_uploaded = upload_to_s3(saved_path, saved_filename)
+
     # Update metadata
     metadata = load_metadata()
     metadata.append({
         "filename": file.filename,
         "saved_as": saved_filename,
         "uploaded_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "row_count": len(rows)
+        "row_count": len(rows),
+        "s3_uploaded": s3_uploaded
     })
     save_metadata(metadata)
 
-    return render_template("result.html", rows=rows, filename=file.filename)
+    return render_template("result.html", rows=rows, filename=file.filename, s3_uploaded=s3_uploaded)
 
 
 @app.route("/health")
